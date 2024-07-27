@@ -280,7 +280,10 @@ namespace PpServerBot
 
         private string BuildRulesetApplicationLine(OsuUser.UserStatistics statistics)
         {
-            return $"#{(statistics.HasRank && statistics.GlobalRank != 0 ? statistics.GlobalRank : "—")}\t({statistics.Pp:N0}pp, \t{statistics.Playcount} playcount)";
+            if (statistics.HasRank && statistics.GlobalRank != 0)
+                return $"#{statistics.GlobalRank}\t({statistics.Pp:N0}pp, \t{statistics.Playcount} playcount)";
+
+            return $"#—\t({statistics.Playcount} playcount)";
         }
     }
 }
