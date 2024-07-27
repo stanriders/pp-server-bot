@@ -90,7 +90,7 @@ namespace PpServerBot
 
             if (interaction.Type == InteractionType.MessageComponent && interaction is SocketMessageComponent componentInteraction)
             {
-                _logger.LogInformation("Processing {Id} MessageComponent interaction...", componentInteraction.Data.CustomId);
+                _logger.LogInformation("Processing {Id} MessageComponent interaction from {User}...", componentInteraction.Data.CustomId, componentInteraction.User.Id);
 
                 switch (componentInteraction.Data.CustomId)
                 {
@@ -180,7 +180,7 @@ namespace PpServerBot
 
             if (interaction.Type == InteractionType.ModalSubmit && interaction is SocketModal modalInteraction)
             {
-                _logger.LogInformation("Processing {Id} Modal interaction...", modalInteraction.Data.CustomId);
+                _logger.LogInformation("Processing {Id} Modal interaction from {User}...", modalInteraction.Data.CustomId, modalInteraction.User.Id);
 
                 if (modalInteraction.Data.CustomId == "onion-application-modal")
                 {
