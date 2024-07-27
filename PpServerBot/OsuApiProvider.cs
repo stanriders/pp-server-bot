@@ -32,7 +32,7 @@ public class OsuUser
         public double Pp { get; set; }
 
         [JsonPropertyName("global_rank")]
-        public uint GlobalRank { get; set; }
+        public uint? GlobalRank { get; set; }
 
         [JsonPropertyName("is_ranked")] 
         public bool HasRank { get; set; }
