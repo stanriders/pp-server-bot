@@ -1,5 +1,6 @@
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using PpServerBot;
 using Serilog;
 using Serilog.Settings.Configuration;
@@ -66,6 +67,7 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.All });
 app.UseSerilogRequestLogging();
 
 if (app.Environment.IsStaging() || app.Environment.IsProduction())
