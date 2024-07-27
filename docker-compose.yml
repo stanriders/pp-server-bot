@@ -7,7 +7,7 @@ networks:
 
 services:
   backend:
-    build: .\PpServerBot\.
+    build: ./PpServerBot/.
     ports:
       - "127.0.0.1:9501:3001"
     environment:
