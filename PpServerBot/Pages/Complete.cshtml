@@ -1,0 +1,19 @@
+﻿@page
+@model CompleteModel
+@{
+    ViewData["Title"] = "Complete";
+}
+
+<div class="success">
+    <h1>
+        You are now verified!<br>
+    </h1>
+    <small>This tab will automatically close in 5 seconds...</small>
+</div>
+
+<script>
+    var milliseconds = 5 * 1000;
+    setTimeout(function () {
+        window.close();
+    }, milliseconds);
+</script>

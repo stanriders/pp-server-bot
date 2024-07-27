@@ -1,0 +1,32 @@
+version: '3.8'
+
+networks:
+  main:
+  logs:
+    external: true
+
+services:
+  backend:
+    build: .\PpServerBot\.
+    ports:
+      - "127.0.0.1:9501:3001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT
+      - ASPNETCORE_URLS=http://+:3001
+      - osuApi__ClientId
+      - osuApi__ClientSecret
+      - osuApi__CallbackUrl=/verify
+      - HuisToken
+      - DiscordConfig__Token
+      - DiscordConfig__GuildId=546120878908506119
+      - DiscordConfig__ApplicationChannelId=1020389783110955008
+      - DiscordConfig__VerifiedChannelId=1020393337913622568
+      - DiscordConfig__OnionVerifiedChannelId=970435984724480041
+    volumes:
+      - ./logs:/app/logs
+      - ./keys:/root/.aspnet/DataProtection-Keys
+    networks:
+      - main
+      - logs
+    restart: unless-stopped
+    pull_policy: build
