@@ -24,6 +24,7 @@ services:
       - DiscordConfig__OnionVerifiedChannelId
       - DiscordConfig__Roles__Onion
       - DiscordConfig__Roles__Verified
+      - DiscordConfig__DisableOnionApplication
     volumes:
       - ./logs:/app/logs
       - ./keys:/root/.aspnet/DataProtection-Keys

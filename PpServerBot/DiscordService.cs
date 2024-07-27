@@ -96,6 +96,11 @@ namespace PpServerBot
                 {
                     case "verify-apply-onion":
                     {
+                        if (_discordConfig.DisableOnionApplication)
+                        {
+                            await interaction.RespondAsync("Onion applications are temporary disabled!", ephemeral: true);
+                        }
+
                         if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
                         {
                             await interaction.RespondAsync("You are already onion! If you think you need to reapply anyway - ping any of the @mod's", ephemeral: true);

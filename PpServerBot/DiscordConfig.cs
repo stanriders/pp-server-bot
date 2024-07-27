@@ -10,6 +10,7 @@
         public ulong OnionVerifiedChannelId { get; set; }
 
         public string VerifyMessage { get; set; } = null!;
+        public bool DisableOnionApplication { get; set; }
 
         public Roles Roles { get; set; } = null!;
     }
