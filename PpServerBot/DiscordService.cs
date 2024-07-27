@@ -200,7 +200,7 @@ namespace PpServerBot
         {
             await interaction.DeferAsync(true);
 
-            var url = "https://pp-verification.stanr.info/";
+            var url = "https://pp-verification.stanr.info";
 #if DEBUG
             url = "http://localhost:3001";
 #endif
