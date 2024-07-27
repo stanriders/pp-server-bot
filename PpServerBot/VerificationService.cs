@@ -26,9 +26,9 @@ namespace PpServerBot
 
         private readonly DiscordConfig _discordConfig;
 
-        public VerificationService(DiscordSocketClient discordSocketClient, 
-            ILogger<VerificationService> logger, 
-            HuisApiProvider huisApiProvider, 
+        public VerificationService(DiscordSocketClient discordSocketClient,
+            ILogger<VerificationService> logger,
+            HuisApiProvider huisApiProvider,
             OsuApiProvider osuApiProvider,
             IOptions<DiscordConfig> configuration)
         {
@@ -74,7 +74,7 @@ namespace PpServerBot
                 return false;
             }
 
-            var verification = _verifications.FirstOrDefault(x=> x.Id == id);
+            var verification = _verifications.FirstOrDefault(x => x.Id == id);
             if (verification == null)
             {
                 _logger.LogWarning("Failed to log in user {Id} - unknown verification id!", id);
@@ -118,7 +118,8 @@ namespace PpServerBot
                 await onionChannel.SendMessageAsync(
                     embed: BuildApplicationEmbed(user, discordUser, verification, addedRoles), components: components);
 
-                _logger.LogInformation("Sent onion application for user {DiscordId} (osu id: {OsuId})", discordUser.Id, user.Id);
+                _logger.LogInformation("Sent onion application for user {DiscordId} (osu id: {OsuId})", discordUser.Id,
+                    user.Id);
             }
             else
             {
@@ -132,7 +133,8 @@ namespace PpServerBot
                 await verifiedChannel.SendMessageAsync(
                     embed: BuildApplicationEmbed(user, discordUser, verification, addedRoles));
 
-                _logger.LogInformation("Sent verification application for user {DiscordId} (osu id: {OsuId})", discordUser.Id, user.Id);
+                _logger.LogInformation("Sent verification application for user {DiscordId} (osu id: {OsuId})",
+                    discordUser.Id, user.Id);
             }
 
             _verifications.Remove(verification);
@@ -183,16 +185,18 @@ namespace PpServerBot
             {
                 await discordUser.AddRoleAsync(_discordConfig.Roles.Verified);
 
-                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics.Osu, _discordConfig.Roles.Osu, discordUser));
-                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics.Taiko, _discordConfig.Roles.Taiko, discordUser));
-                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics.Fruits, _discordConfig.Roles.Catch, discordUser));
-                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics.Mania, _discordConfig.Roles.Mania, discordUser));
+                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Osu, _discordConfig.Roles.Osu, discordUser));
+                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Taiko, _discordConfig.Roles.Taiko, discordUser));
+                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Fruits, _discordConfig.Roles.Catch,discordUser));
+                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Mania, _discordConfig.Roles.Mania, discordUser));
 
-                _logger.LogInformation("Added {Count} roles to user {DiscordId} (osu id: {OsuId})", addedRoleIds.Count, discordUser.Id, osuUser.Id);
+                _logger.LogInformation("Added {Count} roles to user {DiscordId} (osu id: {OsuId})", addedRoleIds.Count,
+                    discordUser.Id, osuUser.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to add roles to user {DiscordId} (osu id: {OsuId})", discordUser.Id, osuUser.Id);
+                _logger.LogError(ex, "Failed to add roles to user {DiscordId} (osu id: {OsuId})", discordUser.Id,
+                    osuUser.Id);
                 return new List<ulong>();
             }
 
@@ -216,7 +220,8 @@ namespace PpServerBot
             }
         }
 
-        private Embed BuildApplicationEmbed(OsuUser osuUser, SocketGuildUser discordUser, Verification verification, List<SocketRole> addedRoles)
+        private Embed BuildApplicationEmbed(OsuUser osuUser, SocketGuildUser discordUser, Verification verification,
+            List<SocketRole> addedRoles)
         {
             var osuLink = $"https://osu.ppy.sh/users/{osuUser.Id}";
 
@@ -228,13 +233,17 @@ namespace PpServerBot
                 descriptionBuilder.Append($"**Onion application**: ```{verification.OnionApplication}```\n");
             }
 
-            descriptionBuilder.Append($"<:osu:1266724120490541150> {BuildRulesetApplicationLine(osuUser.Statistics.Osu)}\n");
-            descriptionBuilder.Append($"<:taiko:1266724145484529705> {BuildRulesetApplicationLine(osuUser.Statistics.Taiko)}\n");
-            descriptionBuilder.Append($"<:mania:1266724133337698324> {BuildRulesetApplicationLine(osuUser.Statistics.Mania)}\n");
-            descriptionBuilder.Append($"<:catch:1266724102274682951> {BuildRulesetApplicationLine(osuUser.Statistics.Fruits)}\n\n");
-            
+            descriptionBuilder.Append(
+                $"<:osu:1266724120490541150> {BuildRulesetApplicationLine(osuUser.Statistics?.Osu)}\n");
+            descriptionBuilder.Append(
+                $"<:taiko:1266724145484529705> {BuildRulesetApplicationLine(osuUser.Statistics?.Taiko)}\n");
+            descriptionBuilder.Append(
+                $"<:mania:1266724133337698324> {BuildRulesetApplicationLine(osuUser.Statistics?.Mania)}\n");
+            descriptionBuilder.Append(
+                $"<:catch:1266724102274682951> {BuildRulesetApplicationLine(osuUser.Statistics?.Fruits)}\n\n");
+
             if (addedRoles.Count != 0)
-                descriptionBuilder.Append($"**Added roles**: {string.Join(' ', addedRoles.Select(x=> x.Mention))}");
+                descriptionBuilder.Append($"**Added roles**: {string.Join(' ', addedRoles.Select(x => x.Mention))}");
             else
                 descriptionBuilder.Append("No new roles added!");
 
@@ -249,23 +258,23 @@ namespace PpServerBot
             return builder.Build();
         }
 
-        private async Task<ulong> AddRulesetRole(UserStatistics statistics, ulong[] roles, SocketGuildUser discordUser)
+        private async Task<ulong> AddRulesetRole(UserStatistics? statistics, ulong[] roles, SocketGuildUser discordUser)
         {
             ulong roleId;
 
-            if (statistics.GlobalRank < 10)
+            if (statistics?.GlobalRank < 10)
             {
                 roleId = roles[0];
-            } 
-            else if (statistics.GlobalRank < 100)
+            }
+            else if (statistics?.GlobalRank < 100)
             {
                 roleId = roles[1];
             }
-            else if (statistics.GlobalRank < 1000)
+            else if (statistics?.GlobalRank < 1000)
             {
                 roleId = roles[2];
             }
-            else if (statistics.GlobalRank < 10000)
+            else if (statistics?.GlobalRank < 10000)
             {
                 roleId = roles[3];
             }
@@ -278,12 +287,15 @@ namespace PpServerBot
             return roleId;
         }
 
-        private string BuildRulesetApplicationLine(OsuUser.UserStatistics statistics)
+        private string BuildRulesetApplicationLine(UserStatistics? statistics)
         {
-            if (statistics.HasRank && statistics.GlobalRank != 0)
-                return $"#{statistics.GlobalRank}\t({statistics.Pp:N0}pp, \t{statistics.Playcount} playcount)";
+            if (statistics == null)
+                return "#—";
 
-            return $"#—\t({statistics.Playcount} playcount)";
+            if (statistics.HasRank || statistics.GlobalRank != 0)
+                return $"#{statistics.GlobalRank} ({statistics.Pp:N0}pp, {statistics.Playcount} playcount)";
+
+            return $"#— ({statistics.Playcount} playcount)";
         }
     }
 }

@@ -13,14 +13,14 @@ public class OsuUser
     public string AvatarUrl { get; set; } = null!;
 
     [JsonPropertyName("statistics_rulesets")]
-    public RulesetStatistics Statistics { get; set; } = null!;
+    public RulesetStatistics? Statistics { get; set; } = null!;
 
     public class RulesetStatistics
     {
-        public UserStatistics Osu { get; set; } = null!;
-        public UserStatistics Taiko { get; set; } = null!;
-        public UserStatistics Fruits { get; set; } = null!;
-        public UserStatistics Mania { get; set; } = null!;
+        public UserStatistics? Osu { get; set; } = null!;
+        public UserStatistics? Taiko { get; set; } = null!;
+        public UserStatistics? Fruits { get; set; } = null!;
+        public UserStatistics? Mania { get; set; } = null!;
     }
 
     public class UserStatistics
