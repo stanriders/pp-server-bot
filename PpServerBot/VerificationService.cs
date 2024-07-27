@@ -158,6 +158,15 @@ namespace PpServerBot
 
             await _huisApiProvider.AddOnion(osuId, discordId);
             await discordUser.AddRoleAsync(_discordConfig.Roles.Onion);
+
+            try
+            {
+                await discordUser.SendMessageAsync("You now have Onion role!");
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Couldn't send private message to user {DiscordId}", discordId);
+            }
         }
 
         public async Task RemoveOnion(ulong discordId)
