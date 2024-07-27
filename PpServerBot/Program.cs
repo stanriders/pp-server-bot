@@ -18,7 +18,7 @@ using var tracer = new ActivityListenerConfiguration()
 
 var osuConfig = builder.Configuration.GetSection("osuApi");
 
-builder.Services.AddAuthentication("InternalCookies")
+builder.Services.AddAuthentication("ExternalCookies")
     .AddCookie("ExternalCookies")
     .AddOAuth("osu", options =>
     {
@@ -90,6 +90,7 @@ if (app.Environment.IsStaging() || app.Environment.IsProduction())
 
 app.UseRouting();
 app.UseAuthorization();
+app.UseAuthentication();
 
 app.MapRazorPages();
 app.MapGet("/", () => Results.Redirect("https://www.youtube.com/watch?v=CLMCkDZpSLQ"));
