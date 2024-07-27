@@ -99,6 +99,7 @@ namespace PpServerBot
                         if (_discordConfig.DisableOnionApplication)
                         {
                             await interaction.RespondAsync("Onion applications are temporary disabled!", ephemeral: true);
+                            return;
                         }
 
                         if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
