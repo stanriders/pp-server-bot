@@ -18,10 +18,12 @@ services:
       - osuApi__CallbackUrl=/verify
       - HuisToken
       - DiscordConfig__Token
-      - DiscordConfig__GuildId=546120878908506119
-      - DiscordConfig__ApplicationChannelId=1020389783110955008
-      - DiscordConfig__VerifiedChannelId=1020393337913622568
-      - DiscordConfig__OnionVerifiedChannelId=970435984724480041
+      - DiscordConfig__GuildId
+      - DiscordConfig__ApplicationChannelId
+      - DiscordConfig__VerifiedChannelId
+      - DiscordConfig__OnionVerifiedChannelId
+      - DiscordConfig__Roles__Onion
+      - DiscordConfig__Roles__Verified
     volumes:
       - ./logs:/app/logs
       - ./keys:/root/.aspnet/DataProtection-Keys
