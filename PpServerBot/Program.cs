@@ -1,3 +1,4 @@
+using Discord;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -5,6 +6,7 @@ using PpServerBot;
 using Serilog;
 using Serilog.Settings.Configuration;
 using SerilogTracing;
+using DiscordConfig = PpServerBot.DiscordConfig;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +61,12 @@ builder.Services.AddOptions<DiscordConfig>()
 
 builder.Services.AddHostedService<DiscordService>();
 
-var config = new DiscordSocketConfig();
+var config = new DiscordSocketConfig 
+{ 
+    GatewayIntents = GatewayIntents.DirectMessages | GatewayIntents.GuildMessages |
+                     GatewayIntents.GuildIntegrations | GatewayIntents.GuildEmojis | GatewayIntents.Guilds
+};
+
 builder.Services.AddSingleton(config);
 builder.Services.AddSingleton<DiscordSocketClient>();
 
