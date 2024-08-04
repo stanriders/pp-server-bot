@@ -95,6 +95,7 @@ app.UseAuthentication();
 app.MapRazorPages();
 app.MapGet("/", () => Results.Redirect("https://www.youtube.com/watch?v=CLMCkDZpSLQ"));
 app.MapGet("/start/{id:guid}", (Guid id) => Results.Challenge(new AuthenticationProperties { RedirectUri = $"/complete?id={id}" }, new[] { "osu" }));
+app.MapGet("/robots.txt", () => Results.Ok("User-agent: *\r\nDisallow: /"));
 
 try
 {
