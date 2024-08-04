@@ -1,13 +1,36 @@
 ﻿@page
-@model ErrorModel
-@{
-    ViewData["Title"] = "Error";
-}
-
-<div class="error">
-    <h1>Error.</h1>
-    <small>An error occurred while processing your request. Try again later and ping mods if it happens again.</small>
-    <h6>@Model.ErrorType - @Model.RequestId</h6>
-</div>
-<div>
-</div>
+@model PpServerBot.Pages.ErrorModel
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PP Development Server Verification - Error</title>
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #131111;
+            color: #FFFFFF;
+        }
+        .error {
+            text-align: center;
+            padding: 2rem;
+            background-color: #540000;
+            border-radius: 12px;
+        }</style>
+</head>
+<body>
+    <div class="error">
+        <h1>Error.</h1>
+        <small>An error occurred while processing your request. Try again later and ping mods if it happens again.</small>
+        <h6>@Model.ErrorType - @Model.RequestId</h6>
+    </div>
+</body>
+</html>

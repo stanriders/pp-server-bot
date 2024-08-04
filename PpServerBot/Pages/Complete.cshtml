@@ -1,19 +1,47 @@
 ﻿@page
-@model CompleteModel
-@{
-    ViewData["Title"] = "Complete";
-}
+@model PpServerBot.Pages.CompleteModel
 
-<div class="success">
-    <h1>
-        You are now verified!<br>
-    </h1>
-    <small>This tab will automatically close in 5 seconds...</small>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PP Development Server Verification - Complete</title>
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
 
-<script>
-    var milliseconds = 5 * 1000;
-    setTimeout(function () {
-        window.close();
-    }, milliseconds);
-</script>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #131111;
+            color: #FFFFFF;
+        }
+
+        .success {
+            text-align: center;
+            padding: 2rem;
+            background-color: #42006b;
+            border-radius: 12px;
+        }</style>
+</head>
+<body>
+    <div class="success">
+        <h1>
+            You are now verified!<br>
+        </h1>
+        <small>This tab will automatically close in 5 seconds...</small>
+    </div>
+
+    <script>
+        var milliseconds = 5 * 1000;
+        setTimeout(function () {
+            window.close();
+        }, milliseconds);
+    </script>
+</body>
+</html>
