@@ -201,9 +201,17 @@ namespace PpServerBot
                 if (modalInteraction.Data.CustomId == "onion-application-modal")
                 {
                     var text = modalInteraction.Data.Components.FirstOrDefault(x => x.CustomId == "onion-application-modal-text");
-                    if (text == null)
+                    if (text == null || string.IsNullOrEmpty(text.Value))
                     {
-                        _logger.LogError("Onion application doesn't have text!");
+                        await modalInteraction.RespondAsync("Your onion application is empty");
+                        _logger.LogError("Onion application from {DiscordId} doesn't have text!", interaction.User.Id);
+                        return;
+                    }
+
+                    if (text.Value.Split(' ').Length < 3)
+                    {
+                        await modalInteraction.RespondAsync("Your onion application is too short");
+                        _logger.LogWarning("Short onion application from {DiscordId} ({Application})", interaction.User.Id, text.Value);
                         return;
                     }
 
