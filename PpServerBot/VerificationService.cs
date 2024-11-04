@@ -20,7 +20,6 @@ namespace PpServerBot
     public class VerificationService
     {
         private readonly List<Verification> _verifications = new();
-        private readonly List<ulong> _onioned = new();
 
         private readonly ILogger<VerificationService> _logger;
         private readonly DiscordSocketClient _discordSocketClient;
@@ -156,18 +155,17 @@ namespace PpServerBot
                 return false;
             }
 
-            if (_onioned.Contains(discordId))
+            var discordUser = guild.GetUser(discordId);
+
+            if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
             {
                 return false;
             }
-
-            var discordUser = guild.GetUser(discordId);
 
             _logger.LogInformation("Adding onion to user {DiscordId} (osu id: {OsuId})...", discordId, osuId);
 
             await _huisApiProvider.AddOnion(osuId, discordId);
             await discordUser.AddRoleAsync(_discordConfig.Roles.Onion);
-            _onioned.Add(discordId);
 
             try
             {
@@ -191,6 +189,11 @@ namespace PpServerBot
             }
 
             var discordUser = guild.GetUser(discordId);
+
+            if (!discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
+            {
+                return;
+            }
 
             _logger.LogInformation("Removing onion from user {DiscordId} (osu id: ?XD)...", discordId);
 
