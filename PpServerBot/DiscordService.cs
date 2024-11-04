@@ -142,7 +142,7 @@ namespace PpServerBot
 
                         if (!await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1])))
                         {
-                            await interaction.RespondAsync("Couldn't add onion!");
+                            await interaction.RespondAsync("Couldn't add onion!", ephemeral: true);
                         }
 
                         var components = new ComponentBuilder()
@@ -203,14 +203,14 @@ namespace PpServerBot
                     var text = modalInteraction.Data.Components.FirstOrDefault(x => x.CustomId == "onion-application-modal-text");
                     if (text == null || string.IsNullOrEmpty(text.Value))
                     {
-                        await modalInteraction.RespondAsync("Your onion application is empty");
+                        await modalInteraction.RespondAsync("Your onion application is empty", ephemeral: true);
                         _logger.LogError("Onion application from {DiscordId} doesn't have text!", interaction.User.Id);
                         return;
                     }
 
                     if (text.Value.Split(' ').Length < 3)
                     {
-                        await modalInteraction.RespondAsync("Your onion application is too short");
+                        await modalInteraction.RespondAsync("Your onion application is too short", ephemeral: true);
                         _logger.LogWarning("Short onion application from {DiscordId} ({Application})", interaction.User.Id, text.Value);
                         return;
                     }
