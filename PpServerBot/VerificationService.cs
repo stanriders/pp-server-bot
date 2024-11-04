@@ -13,11 +13,14 @@ namespace PpServerBot
 
         public bool Onion { get; set; }
         public string? OnionApplication { get; set; }
+
+        public DateTime ApplicationDate { get; set; }
     }
 
     public class VerificationService
     {
         private readonly List<Verification> _verifications = new();
+        private readonly List<ulong> _onioned = new();
 
         private readonly ILogger<VerificationService> _logger;
         private readonly DiscordSocketClient _discordSocketClient;
@@ -49,7 +52,8 @@ namespace PpServerBot
                 Id = id,
                 Onion = onion,
                 DiscordId = discordId,
-                OnionApplication = onionApplication
+                OnionApplication = onionApplication,
+                ApplicationDate = DateTime.UtcNow
             });
 
             return id;
@@ -143,13 +147,18 @@ namespace PpServerBot
             return true;
         }
 
-        public async Task ApplyOnion(int osuId, ulong discordId)
+        public async Task<bool> ApplyOnion(int osuId, ulong discordId)
         {
             var guild = _discordSocketClient.GetGuild(_discordConfig.GuildId);
             if (guild == null)
             {
                 _logger.LogError("Guild {GuildId} not found!", _discordConfig.GuildId);
-                return;
+                return false;
+            }
+
+            if (_onioned.Contains(discordId))
+            {
+                return false;
             }
 
             var discordUser = guild.GetUser(discordId);
@@ -158,6 +167,7 @@ namespace PpServerBot
 
             await _huisApiProvider.AddOnion(osuId, discordId);
             await discordUser.AddRoleAsync(_discordConfig.Roles.Onion);
+            _onioned.Add(discordId);
 
             try
             {
@@ -167,6 +177,8 @@ namespace PpServerBot
             {
                 _logger.LogWarning(e, "Couldn't send private message to user {DiscordId}", discordId);
             }
+
+            return true;
         }
 
         public async Task RemoveOnion(ulong discordId)
@@ -186,9 +198,20 @@ namespace PpServerBot
             await discordUser.RemoveRoleAsync(_discordConfig.Roles.Onion);
         }
 
+        public bool HasApplied(ulong discordId, bool onion)
+        {
+            if (_verifications.Exists(x => x.DiscordId == discordId && x.Onion == onion))
+            {
+                // allow reapplying after 3 days
+                return _verifications.First(x => x.DiscordId == discordId && x.Onion == onion).ApplicationDate < DateTime.UtcNow.AddDays(-3);
+            }
+
+            return false;
+        }
+
         private async Task<List<ulong>> AddRoles(OsuUser osuUser, SocketGuildUser discordUser)
         {
-            var addedRoleIds = new List<ulong> { _discordConfig.Roles.Verified };
+            var addedRoleIds = new List<ulong?> { _discordConfig.Roles.Verified };
 
             try
             {
@@ -199,17 +222,17 @@ namespace PpServerBot
                 addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Fruits, _discordConfig.Roles.Catch,discordUser));
                 addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Mania, _discordConfig.Roles.Mania, discordUser));
 
-                _logger.LogInformation("Added {Count} roles to user {DiscordId} (osu id: {OsuId})", addedRoleIds.Count,
+                _logger.LogInformation("Added {Count} roles to user {DiscordId} (osu id: {OsuId})", addedRoleIds.Count(x => x is not null),
                     discordUser.Id, osuUser.Id);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to add roles to user {DiscordId} (osu id: {OsuId})", discordUser.Id,
                     osuUser.Id);
-                return new List<ulong>();
+                return [];
             }
 
-            return addedRoleIds;
+            return addedRoleIds.Where(x => x is not null).Select(x => x!.Value).ToList();
         }
 
         private async Task RenameUser(OsuUser osuUser, SocketGuildUser discordUser)
@@ -267,23 +290,29 @@ namespace PpServerBot
             return builder.Build();
         }
 
-        private async Task<ulong> AddRulesetRole(UserStatistics? statistics, ulong[] roles, SocketGuildUser discordUser)
+        private async Task<ulong?> AddRulesetRole(UserStatistics? statistics, ulong[] roles, SocketGuildUser discordUser)
         {
+            // don't add any roles if the user never played the mode
+            if (statistics?.GlobalRank is null or 0)
+            {
+                return null;
+            }
+
             ulong roleId;
 
-            if (statistics?.GlobalRank < 10)
+            if (statistics.GlobalRank < 10)
             {
                 roleId = roles[0];
             }
-            else if (statistics?.GlobalRank < 100)
+            else if (statistics.GlobalRank < 100)
             {
                 roleId = roles[1];
             }
-            else if (statistics?.GlobalRank < 1000)
+            else if (statistics.GlobalRank < 1000)
             {
                 roleId = roles[2];
             }
-            else if (statistics?.GlobalRank < 10000)
+            else if (statistics.GlobalRank < 10000)
             {
                 roleId = roles[3];
             }
@@ -301,7 +330,7 @@ namespace PpServerBot
             if (statistics == null)
                 return "#—";
 
-            if (statistics.HasRank || statistics.GlobalRank != 0)
+            if (statistics.HasRank || (statistics.GlobalRank != null && statistics.GlobalRank != 0))
                 return $"#{statistics.GlobalRank} ({statistics.Pp:N0}pp, {statistics.Playcount} playcount)";
 
             return $"#— ({statistics.Playcount} playcount)";

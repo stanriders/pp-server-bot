@@ -102,6 +102,12 @@ namespace PpServerBot
                             return;
                         }
 
+                        if (_verificationService.HasApplied(interaction.User.Id, true))
+                        {
+                            await interaction.RespondAsync("You already applied!", ephemeral: true);
+                            return;
+                        }
+
                         if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
                         {
                             await interaction.RespondAsync("You are already onion! If you think you need to reapply anyway - ping any of the @mod's", ephemeral: true);
@@ -118,7 +124,13 @@ namespace PpServerBot
                             await interaction.RespondAsync("You are already verified!", ephemeral: true);
                             return;
                         }
-                        
+
+                        if (_verificationService.HasApplied(interaction.User.Id, false))
+                        {
+                            await interaction.RespondAsync("You already applied!", ephemeral: true);
+                            return;
+                        }
+
                         await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, false));
                         return;
                     }
@@ -127,7 +139,11 @@ namespace PpServerBot
                         await interaction.DeferAsync();
 
                         var split = id["add-onion-".Length..].Split('-');
-                        await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1]));
+
+                        if (!await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1])))
+                        {
+                            await interaction.RespondAsync("Couldn't add onion!");
+                        }
 
                         var components = new ComponentBuilder()
                             .WithButton("Remove onion", $"remove-onion-{split[0]}-{split[1]}", ButtonStyle.Danger)
