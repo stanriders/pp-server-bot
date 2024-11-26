@@ -211,7 +211,7 @@ namespace PpServerBot
                     if (text.Value.Split(' ').Length < 3)
                     {
                         await modalInteraction.RespondAsync("Your onion application is too short", ephemeral: true);
-                        _logger.LogWarning("Short onion application from {DiscordId} ({Application})", interaction.User.Id, text.Value);
+                        _logger.LogWarning("Short onion application from {DiscordId} ({OnionApplication})", interaction.User.Id, text.Value);
                         return;
                     }
 
