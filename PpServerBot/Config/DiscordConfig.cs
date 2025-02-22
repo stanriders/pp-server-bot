@@ -1,4 +1,4 @@
-﻿namespace PpServerBot
+﻿namespace PpServerBot.Config
 {
     public class DiscordConfig
     {

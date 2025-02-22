@@ -2,11 +2,13 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
-using PpServerBot;
+using PpServerBot.Integrations;
+using PpServerBot.Integrations.Osu;
+using PpServerBot.Services;
 using Serilog;
 using Serilog.Settings.Configuration;
 using SerilogTracing;
-using DiscordConfig = PpServerBot.DiscordConfig;
+using DiscordConfig = PpServerBot.Config.DiscordConfig;
 
 var builder = WebApplication.CreateBuilder(args);
 

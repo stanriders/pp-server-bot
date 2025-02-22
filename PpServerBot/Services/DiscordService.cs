@@ -1,8 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
+using DiscordConfig = PpServerBot.Config.DiscordConfig;
 
-namespace PpServerBot
+namespace PpServerBot.Services
 {
     public class DiscordService : BackgroundService
     {
@@ -12,7 +13,7 @@ namespace PpServerBot
 
         private readonly DiscordConfig _discordConfig;
 
-        public DiscordService(IOptions<DiscordConfig> configuration, ILogger<DiscordService> logger, 
+        public DiscordService(IOptions<DiscordConfig> configuration, ILogger<DiscordService> logger,
             DiscordSocketClient client, VerificationService verificationService)
         {
             _logger = logger;
@@ -20,7 +21,7 @@ namespace PpServerBot
             _verificationService = verificationService;
 
             _discordConfig = configuration.Value;
-            
+
             _client.Log += Log;
             _client.Ready += Ready;
             _client.InteractionCreated += InteractionCreated;
@@ -95,99 +96,99 @@ namespace PpServerBot
                 switch (componentInteraction.Data.CustomId)
                 {
                     case "verify-apply-onion":
-                    {
-                        if (_discordConfig.DisableOnionApplication)
                         {
-                            await interaction.RespondAsync("Onion applications are temporary disabled!", ephemeral: true);
+                            if (_discordConfig.DisableOnionApplication)
+                            {
+                                await interaction.RespondAsync("Onion applications are temporary disabled!", ephemeral: true);
+                                return;
+                            }
+
+                            if (_verificationService.HasApplied(interaction.User.Id, true))
+                            {
+                                await interaction.RespondAsync("You already applied!", ephemeral: true);
+                                return;
+                            }
+
+                            if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
+                            {
+                                await interaction.RespondAsync("You are already onion! If you think you need to reapply anyway - ping any of the @mod's", ephemeral: true);
+                                return;
+                            }
+
+                            await SendOnionModal(interaction);
                             return;
                         }
-
-                        if (_verificationService.HasApplied(interaction.User.Id, true))
-                        {
-                            await interaction.RespondAsync("You already applied!", ephemeral: true);
-                            return;
-                        }
-
-                        if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
-                        {
-                            await interaction.RespondAsync("You are already onion! If you think you need to reapply anyway - ping any of the @mod's", ephemeral: true);
-                            return;
-                        }
-
-                        await SendOnionModal(interaction);
-                        return;
-                    }
                     case "verify":
-                    {
-                        if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Verified))
                         {
-                            await interaction.RespondAsync("You are already verified!", ephemeral: true);
+                            if (discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Verified))
+                            {
+                                await interaction.RespondAsync("You are already verified!", ephemeral: true);
+                                return;
+                            }
+
+                            if (_verificationService.HasApplied(interaction.User.Id, false))
+                            {
+                                await interaction.RespondAsync("You already applied!", ephemeral: true);
+                                return;
+                            }
+
+                            await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, false));
                             return;
                         }
-
-                        if (_verificationService.HasApplied(interaction.User.Id, false))
-                        {
-                            await interaction.RespondAsync("You already applied!", ephemeral: true);
-                            return;
-                        }
-
-                        await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, false));
-                        return;
-                    }
                     case { } id when id.StartsWith("add-onion-"):
-                    {
-                        await interaction.DeferAsync();
-
-                        var split = id["add-onion-".Length..].Split('-');
-
-                        if (!await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1])))
                         {
-                            await interaction.RespondAsync("Couldn't add onion!", ephemeral: true);
+                            await interaction.DeferAsync();
+
+                            var split = id["add-onion-".Length..].Split('-');
+
+                            if (!await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1])))
+                            {
+                                await interaction.RespondAsync("Couldn't add onion!", ephemeral: true);
+                            }
+
+                            var components = new ComponentBuilder()
+                                .WithButton("Remove onion", $"remove-onion-{split[0]}-{split[1]}", ButtonStyle.Danger)
+                                .Build();
+
+                            var embed = new EmbedBuilder()
+                                .WithAuthor(interaction.User)
+                                .WithDescription("Added onion")
+                                .WithColor(Color.Green)
+                                .WithTimestamp(DateTimeOffset.UtcNow)
+                                .Build();
+
+                            await interaction.ModifyOriginalResponseAsync(properties =>
+                            {
+                                properties.Components = components;
+                                properties.Embeds = componentInteraction.Message.Embeds.Append(embed).ToArray();
+                            });
+                            return;
                         }
-
-                        var components = new ComponentBuilder()
-                            .WithButton("Remove onion", $"remove-onion-{split[0]}-{split[1]}", ButtonStyle.Danger)
-                            .Build();
-
-                        var embed = new EmbedBuilder()
-                            .WithAuthor(interaction.User)
-                            .WithDescription("Added onion")
-                            .WithColor(Color.Green)
-                            .WithTimestamp(DateTimeOffset.UtcNow)
-                            .Build();
-
-                        await interaction.ModifyOriginalResponseAsync(properties =>
-                        {
-                            properties.Components = components;
-                            properties.Embeds = componentInteraction.Message.Embeds.Append(embed).ToArray();
-                        });
-                        return;
-                    }
                     case { } id when id.StartsWith("remove-onion-"):
-                    {
-                        await interaction.DeferAsync();
-
-                        var split = id["remove-onion-".Length..].Split('-');
-                        await _verificationService.RemoveOnion(ulong.Parse(split[1]));
-
-                        var components = new ComponentBuilder()
-                            .WithButton("Add onion", $"add-onion-{split[0]}-{split[1]}", ButtonStyle.Success)
-                            .Build();
-
-                        var embed = new EmbedBuilder()
-                            .WithAuthor(interaction.User)
-                            .WithDescription("Removed onion")
-                            .WithColor(Color.Red)
-                            .WithTimestamp(DateTimeOffset.UtcNow)
-                            .Build();
-
-                        await interaction.ModifyOriginalResponseAsync(properties =>
                         {
-                            properties.Components = components;
-                            properties.Embeds = componentInteraction.Message.Embeds.Append(embed).ToArray();
-                        });
-                        return;
-                    }
+                            await interaction.DeferAsync();
+
+                            var split = id["remove-onion-".Length..].Split('-');
+                            await _verificationService.RemoveOnion(ulong.Parse(split[1]));
+
+                            var components = new ComponentBuilder()
+                                .WithButton("Add onion", $"add-onion-{split[0]}-{split[1]}", ButtonStyle.Success)
+                                .Build();
+
+                            var embed = new EmbedBuilder()
+                                .WithAuthor(interaction.User)
+                                .WithDescription("Removed onion")
+                                .WithColor(Color.Red)
+                                .WithTimestamp(DateTimeOffset.UtcNow)
+                                .Build();
+
+                            await interaction.ModifyOriginalResponseAsync(properties =>
+                            {
+                                properties.Components = components;
+                                properties.Embeds = componentInteraction.Message.Embeds.Append(embed).ToArray();
+                            });
+                            return;
+                        }
                     default:
                         _logger.LogInformation("Unknown MessageComponent interaction {Id}!", componentInteraction.Data.CustomId);
                         return;

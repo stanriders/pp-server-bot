@@ -1,10 +1,13 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
+using PpServerBot.Integrations;
 using System.Text;
-using static PpServerBot.OsuUser;
+using DiscordConfig = PpServerBot.Config.DiscordConfig;
+using static PpServerBot.Integrations.Osu.OsuUser;
+using PpServerBot.Integrations.Osu;
 
-namespace PpServerBot
+namespace PpServerBot.Services
 {
     public class Verification
     {
@@ -222,7 +225,7 @@ namespace PpServerBot
 
                 addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Osu, _discordConfig.Roles.Osu, discordUser));
                 addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Taiko, _discordConfig.Roles.Taiko, discordUser));
-                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Fruits, _discordConfig.Roles.Catch,discordUser));
+                addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Fruits, _discordConfig.Roles.Catch, discordUser));
                 addedRoleIds.Add(await AddRulesetRole(osuUser.Statistics?.Mania, _discordConfig.Roles.Mania, discordUser));
 
                 _logger.LogInformation("Added {Count} roles to user {DiscordId} (osu id: {OsuId})", addedRoleIds.Count(x => x is not null),
@@ -333,7 +336,7 @@ namespace PpServerBot
             if (statistics == null)
                 return "#—";
 
-            if (statistics.HasRank || (statistics.GlobalRank != null && statistics.GlobalRank != 0))
+            if (statistics.HasRank || statistics.GlobalRank != null && statistics.GlobalRank != 0)
                 return $"#{statistics.GlobalRank} ({statistics.Pp:N0}pp, {statistics.Playcount} playcount)";
 
             return $"#— ({statistics.Playcount} playcount)";

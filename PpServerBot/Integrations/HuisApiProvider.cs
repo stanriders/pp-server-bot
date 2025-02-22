@@ -1,4 +1,4 @@
-﻿namespace PpServerBot
+﻿namespace PpServerBot.Integrations
 {
     public class HuisApiProvider
     {
@@ -16,7 +16,7 @@
             var response = await client.PostAsJsonAsync("/oauth/add-onion",
                 new
                 {
-                    osu_id = userId, 
+                    osu_id = userId,
                     discord_id = discordId
                 });
 
