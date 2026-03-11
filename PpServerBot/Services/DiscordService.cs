@@ -171,7 +171,7 @@ namespace PpServerBot.Services
                 return;
             }
 
-            await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, false));
+            await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, false, []));
         }
 
         public async Task AddOnionInteraction(SocketMessageComponent interaction, SocketGuildUser discordUser)
@@ -182,13 +182,17 @@ namespace PpServerBot.Services
 
             var split = id["add-onion-".Length..].Split('-');
 
-            if (!await _verificationService.ApplyOnion(int.Parse(split[0]), ulong.Parse(split[1])))
+            var osuId = int.Parse(split[0]);
+            var discordId = ulong.Parse(split[1]);
+            var gamemodes = split[2].Split(',');
+
+            if (!await _verificationService.ApplyOnion(osuId, discordId, gamemodes))
             {
                 await interaction.RespondAsync("Couldn't add onion!", ephemeral: true);
             }
 
             var components = new ComponentBuilder()
-                .WithButton("Remove onion", $"remove-onion-{split[0]}-{split[1]}", ButtonStyle.Danger)
+                .WithButton("Remove onion", $"remove-onion-{split[0]}-{split[1]}-{split[2]}", ButtonStyle.Danger)
                 .Build();
 
             var embed = new EmbedBuilder()
@@ -215,7 +219,7 @@ namespace PpServerBot.Services
             await _verificationService.RemoveOnion(ulong.Parse(split[1]));
 
             var components = new ComponentBuilder()
-                .WithButton("Add onion", $"add-onion-{split[0]}-{split[1]}", ButtonStyle.Success)
+                .WithButton("Add onion", $"add-onion-{split[0]}-{split[1]}-{split[2]}", ButtonStyle.Success)
                 .Build();
 
             var embed = new EmbedBuilder()
@@ -249,7 +253,15 @@ namespace PpServerBot.Services
                 return;
             }
 
-            await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, true, text.Value));
+            var select = interaction.Data.Components.FirstOrDefault(x => x.CustomId == "onion-application-modal-mode-select");
+            if (select == null || select.Values.Count == 0)
+            {
+                await interaction.RespondAsync("Incorrect onion application", ephemeral: true);
+                _logger.LogError("Onion application from {DiscordId} doesn't have mode selection!", interaction.User.Id);
+                return;
+            }
+
+            await SendVerifyMessage(interaction, _verificationService.Start(interaction.User.Id, true, select.Values.ToArray(), text.Value));
         }
 
         private async Task SendVerifyMessage(SocketInteraction interaction, Guid verificationId)
@@ -272,17 +284,24 @@ namespace PpServerBot.Services
 
         private async Task SendOnionModal(SocketInteraction interaction)
         {
-            var modalText = new TextInputBuilder()
-                .WithCustomId("onion-application-modal-text")
-                .WithLabel("What you'd be most interested in")
-                .WithPlaceholder("speed / jump aim / tech / idk")
+            var modeSelectBuilder = new SelectMenuBuilder()
+                .WithCustomId("onion-application-modal-mode-select")
+                .WithPlaceholder("osu/taiko/catch/mania")
                 .WithRequired(true)
-                .WithStyle(TextInputStyle.Paragraph);
+                .WithOptions([
+                    new SelectMenuOptionBuilder("osu!", "osu", emote: new Emote(1266724120490541150, "osu")),
+                    new SelectMenuOptionBuilder("taiko", "taiko", emote: new Emote(1266724145484529705, "taiko")),
+                    new SelectMenuOptionBuilder("catch", "catch", emote: new Emote(1266724102274682951, "catch")),
+                    new SelectMenuOptionBuilder("mania", "mania", emote: new Emote(1266724133337698324, "mania"))
+                ])
+                .WithMaxValues(3)
+                .WithMinValues(1);
 
             var modal = new ModalBuilder()
                 .WithCustomId("onion-application-modal")
                 .WithTitle("Onion application")
-                .AddTextInput(modalText)
+                .AddTextInput("What you'd be most interested in", "onion-application-modal-text", TextInputStyle.Paragraph, "speed / jump aim / tech / idk", required: true)
+                .AddSelectMenu("Select gamemodes you're interested in", modeSelectBuilder)
                 .Build();
 
             await interaction.RespondWithModalAsync(modal);

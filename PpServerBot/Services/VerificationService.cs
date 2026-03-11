@@ -1,11 +1,12 @@
 ﻿using Discord;
+using Discord.LibDave.Binding;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
 using PpServerBot.Integrations;
-using System.Text;
-using DiscordConfig = PpServerBot.Config.DiscordConfig;
-using static PpServerBot.Integrations.Osu.OsuUser;
 using PpServerBot.Integrations.Osu;
+using System.Text;
+using static PpServerBot.Integrations.Osu.OsuUser;
+using DiscordConfig = PpServerBot.Config.DiscordConfig;
 
 namespace PpServerBot.Services
 {
@@ -16,6 +17,7 @@ namespace PpServerBot.Services
 
         public bool Onion { get; set; }
         public string? OnionApplication { get; set; }
+        public string[] OnionModes { get; set; } = [];
 
         public DateTime ApplicationDate { get; set; }
     }
@@ -45,7 +47,7 @@ namespace PpServerBot.Services
             _discordConfig = configuration.Value;
         }
 
-        public Guid Start(ulong discordId, bool onion, string? onionApplication = null)
+        public Guid Start(ulong discordId, bool onion, string[] onionGamemodes, string? onionApplication = null)
         {
             var id = Guid.NewGuid();
 
@@ -55,6 +57,7 @@ namespace PpServerBot.Services
                 Onion = onion,
                 DiscordId = discordId,
                 OnionApplication = onionApplication,
+                OnionModes = onionGamemodes,
                 ApplicationDate = DateTime.UtcNow
             });
 
@@ -118,7 +121,7 @@ namespace PpServerBot.Services
                 }
 
                 var components = new ComponentBuilder()
-                    .WithButton("Add onion", $"add-onion-{user.Id}-{discordUser.Id}", ButtonStyle.Success)
+                    .WithButton("Add onion", $"add-onion-{user.Id}-{discordUser.Id}-{string.Join(',', verification.OnionModes)}", ButtonStyle.Success)
                     .Build();
 
                 await onionChannel.SendMessageAsync(
@@ -149,7 +152,7 @@ namespace PpServerBot.Services
             return true;
         }
 
-        public async Task<bool> ApplyOnion(int osuId, ulong discordId)
+        public async Task<bool> ApplyOnion(int osuId, ulong discordId, string[] gamemodes)
         {
             var guild = _discordSocketClient.GetGuild(_discordConfig.GuildId);
             if (guild == null)
@@ -169,6 +172,18 @@ namespace PpServerBot.Services
 
             await _huisApiProvider.AddOnion(osuId, discordId);
             await discordUser.AddRoleAsync(_discordConfig.Roles.Onion);
+
+            foreach (var mode in gamemodes)
+            {
+                await discordUser.AddRoleAsync(mode switch
+                {
+                    "osu" => _discordConfig.Roles.OnionModes[0],
+                    "taiko" => _discordConfig.Roles.OnionModes[1],
+                    "catch" => _discordConfig.Roles.OnionModes[2],
+                    "mania" => _discordConfig.Roles.OnionModes[3],
+                    _ => throw new ArgumentOutOfRangeException()
+                });
+            }
 
             try
             {
@@ -202,6 +217,11 @@ namespace PpServerBot.Services
 
             await _huisApiProvider.RemoveOnion(discordId);
             await discordUser.RemoveRoleAsync(_discordConfig.Roles.Onion);
+
+            foreach (var modeRoleToRemove in discordUser.Roles.Where(x => _discordConfig.Roles.OnionModes.Contains(x.Id)))
+            {
+                await discordUser.RemoveRoleAsync(modeRoleToRemove);
+            }
         }
 
         public bool HasApplied(ulong discordId, bool onion)

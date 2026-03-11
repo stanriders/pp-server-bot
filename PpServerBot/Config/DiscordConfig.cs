@@ -19,6 +19,7 @@
     {
         public ulong Verified { get; set; }
         public ulong Onion { get; set; }
+        public ulong[] OnionModes { get; set; } = null!;
 
         public ulong[] Osu { get; set; } = null!;
         public ulong[] Taiko { get; set; } = null!;
