@@ -294,7 +294,7 @@ namespace PpServerBot.Services
                     new SelectMenuOptionBuilder("catch", "catch", emote: new Emote(1266724102274682951, "catch")),
                     new SelectMenuOptionBuilder("mania", "mania", emote: new Emote(1266724133337698324, "mania"))
                 ])
-                .WithMaxValues(3)
+                .WithMaxValues(4)
                 .WithMinValues(1);
 
             var modal = new ModalBuilder()
