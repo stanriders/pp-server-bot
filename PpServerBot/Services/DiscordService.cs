@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
+using System.Linq;
 using DiscordConfig = PpServerBot.Config.DiscordConfig;
 
 namespace PpServerBot.Services
@@ -64,18 +65,17 @@ namespace PpServerBot.Services
             {
                 _logger.LogInformation("Verify message wasn't found, sending one...");
 
-                var embed = new EmbedBuilder()
-                    .WithTitle("Verification")
-                    .WithDescription(_discordConfig.VerifyMessage)
-                    .WithColor(new Color(183, 15, 117))
-                    .Build();
-
-                var components = new ComponentBuilder()
-                    .WithButton("Verify", "verify", ButtonStyle.Success)
-                    .WithButton("Verify and apply for Onion", "verify-apply-onion")
-                    .Build();
-
-                await applicationChannel.SendMessageAsync(embed: embed, components: components, flags: MessageFlags.SuppressNotification);
+                await applicationChannel.SendMessageAsync(embed: new EmbedBuilder()
+                        .WithTitle("Verification")
+                        .WithDescription(_discordConfig.VerifyMessage)
+                        .WithColor(new Color(183, 15, 117))
+                        .Build(),
+                    components: new ComponentBuilder()
+                        .WithButton("Verify", "verify", ButtonStyle.Success)
+                        .WithButton("Verify and apply for Onion", "verify-apply-onion")
+                        .WithButton("Select Onion gamemodes", "select-gamemodes", ButtonStyle.Secondary)
+                        .Build(),
+                    flags: MessageFlags.SuppressNotification);
             }
         }
 
@@ -89,49 +89,58 @@ namespace PpServerBot.Services
 
             var discordUser = guild.GetUser(interaction.User.Id);
 
-            if (interaction.Type == InteractionType.MessageComponent &&
-                interaction is SocketMessageComponent componentInteraction)
+            switch (interaction.Type)
             {
-                _logger.LogInformation("Processing {Id} MessageComponent interaction from {User}...",
-                    componentInteraction.Data.CustomId, componentInteraction.User.Id);
-
-                switch (componentInteraction.Data.CustomId)
+                case InteractionType.MessageComponent when interaction is SocketMessageComponent componentInteraction:
                 {
-                    case "verify-apply-onion":
-                        await ApplyForOnionInteraction(interaction, discordUser);
-                        return;
-                    case "verify":
-                        await VerifyInteraction(interaction, discordUser);
-                        return;
-                    case { } id when id.StartsWith("add-onion-"):
-                        await AddOnionInteraction(componentInteraction, discordUser);
-                        return;
-                    case { } id when id.StartsWith("remove-onion-"):
-                        await RemoveOnionInteraction(componentInteraction, discordUser);
-                        return;
+                    _logger.LogInformation("Processing {Id} MessageComponent interaction from {User}...",
+                        componentInteraction.Data.CustomId, componentInteraction.User.Id);
+
+                    switch (componentInteraction.Data.CustomId)
+                    {
+                        case "verify-apply-onion":
+                            await ApplyForOnionInteraction(interaction, discordUser);
+                            return;
+                        case "verify":
+                            await VerifyInteraction(interaction, discordUser);
+                            return;
+                        case { } id when id.StartsWith("add-onion-"):
+                            await AddOnionInteraction(componentInteraction, discordUser);
+                            return;
+                        case { } id when id.StartsWith("remove-onion-"):
+                            await RemoveOnionInteraction(componentInteraction, discordUser);
+                            return;
+                        case "select-gamemodes":
+                            await SelectOnionGamemodesInteraction(interaction, discordUser);
+                            return;
+                        default:
+                            _logger.LogInformation("Unknown MessageComponent interaction {Id}!",
+                                componentInteraction.Data.CustomId);
+                            return;
+                    }
                 }
-
-                _logger.LogInformation("Unknown MessageComponent interaction {Id}!",
-                    componentInteraction.Data.CustomId);
-                return;
-            }
-
-            if (interaction.Type == InteractionType.ModalSubmit && interaction is SocketModal modalInteraction)
-            {
-                _logger.LogInformation("Processing {Id} Modal interaction from {User}...",
-                    modalInteraction.Data.CustomId, modalInteraction.User.Id);
-
-                if (modalInteraction.Data.CustomId == "onion-application-modal")
+                case InteractionType.ModalSubmit when interaction is SocketModal modalInteraction:
                 {
-                    await OnionApplicationModalInteraction(modalInteraction, discordUser);
-                    return;
+                    _logger.LogInformation("Processing {Id} Modal interaction from {User}...",
+                        modalInteraction.Data.CustomId, modalInteraction.User.Id);
+
+                    switch (modalInteraction.Data.CustomId)
+                    {
+                        case "onion-application-modal":
+                            await OnionApplicationModalInteraction(modalInteraction, discordUser);
+                            return;
+                        case "select-onion-modes-modal":
+                            await SelectOnionGamemodesModalInteraction(modalInteraction, discordUser);
+                            return;
+                        default:
+                            _logger.LogInformation("Unknown Modal interaction {Id}!", modalInteraction.Data.CustomId);
+                            return;
+                    }
                 }
-
-                _logger.LogInformation("Unknown Modal interaction {Id}!", modalInteraction.Data.CustomId);
-                return;
+                default:
+                    _logger.LogInformation("Unknown interaction {InteractionType}!", interaction.Type);
+                    break;
             }
-
-            _logger.LogInformation("Unknown interaction {InteractionType}!", interaction.Type);
         }
 
         private async Task ApplyForOnionInteraction(SocketInteraction interaction, SocketGuildUser discordUser)
@@ -307,6 +316,69 @@ namespace PpServerBot.Services
             await interaction.RespondWithModalAsync(modal);
         }
 
+        private async Task SelectOnionGamemodesInteraction(SocketInteraction interaction, SocketGuildUser discordUser)
+        {
+            if (!discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.Onion))
+            {
+                await interaction.RespondAsync("You don't have an Onion role!", ephemeral: true);
+                return;
+            }
+
+            var modeSelectBuilder = new SelectMenuBuilder()
+                .WithCustomId("select-onion-modes-mode-select")
+                .WithPlaceholder("osu/taiko/catch/mania")
+                .WithRequired(true)
+                .WithOptions([
+                    new SelectMenuOptionBuilder("osu!", "osu", emote: new Emote(1266724120490541150, "osu"), isDefault: discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.OnionModes[0])),
+                    new SelectMenuOptionBuilder("taiko", "taiko", emote: new Emote(1266724145484529705, "taiko"), isDefault: discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.OnionModes[1])),
+                    new SelectMenuOptionBuilder("catch", "catch", emote: new Emote(1266724102274682951, "catch"), isDefault: discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.OnionModes[2])),
+                    new SelectMenuOptionBuilder("mania", "mania", emote: new Emote(1266724133337698324, "mania"), isDefault: discordUser.Roles.Any(x => x.Id == _discordConfig.Roles.OnionModes[3]))
+                ])
+                .WithMaxValues(4)
+                .WithMinValues(1);
+
+            var modal = new ModalBuilder()
+                .WithCustomId("select-onion-modes-modal")
+                .WithTitle("Gamemodes selection")
+                .AddSelectMenu("Select gamemodes you're interested in", modeSelectBuilder)
+                .Build();
+
+            await interaction.RespondWithModalAsync(modal);
+        }
+
+        public async Task SelectOnionGamemodesModalInteraction(SocketModal interaction, SocketGuildUser discordUser)
+        {
+            var select = interaction.Data.Components.FirstOrDefault(x => x.CustomId == "select-onion-modes-mode-select");
+            if (select == null || select.Values.Count == 0)
+            {
+                await interaction.RespondAsync("Incorrect gamemode selection", ephemeral: true);
+                _logger.LogError("Mode selection from {DiscordId} doesn't have mode selection component!", interaction.User.Id);
+                return;
+            }
+
+            var selectedRoles = select.Values.Select(ModeToRole).ToArray();
+
+            var relevantRoles = discordUser.Roles.Select(x => x.Id)
+                .Where(x => _discordConfig.Roles.OnionModes.Contains(x)).ToArray();
+
+            var newRoles = selectedRoles.Except(relevantRoles).ToArray();
+            var removedRoles = relevantRoles.Except(selectedRoles).ToArray();
+
+            foreach (var role in newRoles)
+            {
+                await discordUser.AddRoleAsync(role);
+            }
+
+            foreach (var role in removedRoles)
+            {
+                await discordUser.RemoveRoleAsync(role);
+            }
+
+            await interaction.RespondAsync($"Set mode(s) to {string.Join(',', select.Values)}!", ephemeral: true);
+
+            _logger.LogInformation("Set gamemode roles {Roles} for user {Username}", string.Join(',', select.Values), discordUser.Username);
+        }
+
         private Task Log(LogMessage message)
         {
             var severity = message.Severity switch
@@ -323,6 +395,18 @@ namespace PpServerBot.Services
             _logger.Log(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
 
             return Task.CompletedTask;
+        }
+
+        private ulong ModeToRole(string mode)
+        {
+            return mode switch
+            {
+                "osu" => _discordConfig.Roles.OnionModes[0],
+                "taiko" => _discordConfig.Roles.OnionModes[1],
+                "catch" => _discordConfig.Roles.OnionModes[2],
+                "mania" => _discordConfig.Roles.OnionModes[3],
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
     }
 }
